@@ -1,0 +1,31 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+*.db
+config/settings.ini
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reportes (generados)
+reports/*.csv
+reports/*.xlsx
+
+# Virtual environment
+bin/
+lib/
