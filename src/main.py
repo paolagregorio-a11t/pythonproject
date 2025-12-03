@@ -14,7 +14,6 @@ from models import Trip
 
 
 class TravelApp:
-    """Main application"""
     
     def __init__(self):
         print("\n" + "="*50)
@@ -22,12 +21,12 @@ class TravelApp:
         print("="*50)
         
         # Load configuration
-        print("\nLoading configuration...")
+        print("\n Loading configuration...")
         self.config = Config("config/settings.ini")
         print("Configuration loaded")
         
         # Connect to database
-        print("\n🗄️  Initializing database...")
+        print("\n Initializing database...")
         db_path = self.config.get_db_path()
         print(f"Database: {db_path}")
         self.db = DatabaseManager(db_path)
@@ -36,16 +35,18 @@ class TravelApp:
         print("Database ready\n")
     
     def show_menu(self):
-        """Show main menu"""
         print("="*50)
         print("1. Add trip")
         print("2. List trips")
-        print("3. Exit")
-        print("="*50)
+        print("3. View trip details")
+        print("4. Update trip budget")
+        print("5. Delete trip")
+        print("6. Manage places in trip")
+        print("7. Exit")
+        print("="*60)
     
     def add_trip(self):
-        """Add a trip to database"""
-        print("\n➕ Add Trip")
+        print("\n Add Trip")
         print("-"*50)
         
         name = input("Trip name: ").strip()
@@ -80,7 +81,7 @@ class TravelApp:
     
     def list_trips(self):
         """List all trips from database"""
-        print("\n📋 All Trips")
+        print("\n All Trips")
         print("-"*50)
         
         try:
@@ -88,7 +89,7 @@ class TravelApp:
             rows = self.db.cursor.fetchall()
             
             if not rows:
-                print("📭 No trips yet\n")
+                print("No trips yet\n")
                 return
             
             for row in rows:
@@ -101,26 +102,190 @@ class TravelApp:
             print()
         except Exception as e:
             print(f"Error: {e}\n")
+            
+    def add_place(self, trip_id):
+        print("\nADD PLACE")
+        print("-"*30)
+        
+        name = input("Place name: ").strip()
+        category = input("Category (museum/restaurant/monument): ").strip()
+        
+        try:
+            self.db.cursor.execute('''
+                INSERT INTO places (trip_id, name, category)
+                VALUES (?, ?, ?)
+            ''', (trip_id, name, category))
+            self.db.commit()
+            print("Place added!")
+        except Exception as e:
+            print(f"Error: {e}")
+            
+            
+    def list_places(self, trip_id):
+        self.db.cursor.execute('SELECT * FROM places WHERE trip_id = ? ORDER BY name', (trip_id,))
+        places = self.db.cursor.fetchall()
+        
+        if not places:
+            print("No places yet")
+        else:
+            print("\n Places:")
+            for place in places:
+                status = "Visited" if place['visited'] else "Not visited"
+                print(f"  [ID: {place['id']}] {status} {place['name']} ({place['category']})")
+
     
     def run(self):
-        """Run the application"""
         while True:
             self.show_menu()
-            choice = input("Select: ").strip()
+            choice = input("Select option (1-7): ").strip()
             
             if choice == '1':
                 self.add_trip()
             elif choice == '2':
                 self.list_trips()
             elif choice == '3':
-                print("\nGoodbye!\n")
+                self.view_trip_details()
+            elif choice == '4':
+                self.update_trip_budget()
+            elif choice == '5':
+                self.delete_trip()
+            elif choice == '6':
+                self.manage_places()
+            elif choice == '7':
+                print("\nGoodbye!")
                 break
             else:
-                print("Invalid option\n")
+                print("Invalid option. Try 1-7")
     
     def close(self):
-        """Close database"""
         self.db.disconnect()
+        
+    def view_trip_details(self):
+        print("\n TRIP DETAILS")
+        print("-"*40)
+        
+        try:
+            trip_id = int(input("Enter trip ID: "))
+            
+            self.db.cursor.execute('SELECT * FROM trips WHERE id = ?', (trip_id,))
+            row = self.db.cursor.fetchone()
+            
+            if not row:
+                print("Trip not found")
+                return
+            
+            print(f"\n ID: {row['id']}")
+            print(f"Name: {row['name']}")
+            print(f"Country: {row['country']}")
+            print(f"City: {row['city']}")
+            print(f"Dates: {row['start_date']} → {row['end_date']}")
+            print(f"Budget: €{row['budget']:.2f}")
+            print(f"Created: {row['created_at']}")
+            
+            if row['description']:
+                print(f"Description: {row['description']}")
+                
+        except ValueError:
+            print("Invalid ID")
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def update_trip_budget(self):
+        """Update budget of a trip"""
+        print("\n UPDATE BUDGET")
+        print("-"*40)
+        
+        try:
+            trip_id = int(input("Enter trip ID: "))
+            new_budget = float(input("New budget (€): "))
+            
+            self.db.cursor.execute('SELECT name FROM trips WHERE id = ?', (trip_id,))
+            row = self.db.cursor.fetchone()
+            
+            if not row:
+                print("Trip not found")
+                return
+            
+            confirm = input(f"Update '{row['name']}' budget to €{new_budget:.2f}? (y/n): ")
+            
+            if confirm.lower() == 'y':
+                self.db.cursor.execute(
+                    'UPDATE trips SET budget = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    (new_budget, trip_id)
+                )
+                self.db.commit()
+                print("Budget updated!")
+            else:
+                print("Cancelled")
+                
+        except ValueError:
+            print("Invalid input")
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def delete_trip(self):
+        print("\n DELETE TRIP")
+        print("-"*40)
+        
+        try:
+            trip_id = int(input("Enter trip ID to delete: "))
+            
+            self.db.cursor.execute('SELECT name FROM trips WHERE id = ?', (trip_id,))
+            row = self.db.cursor.fetchone()
+            
+            if not row:
+                print(" Trip not found")
+                return
+            
+            print(f"\n Delete: {row['name']} (ID: {trip_id})")
+            confirm = input("Are you sure? (y/n): ")
+            
+            if confirm.lower() == 'y':
+                self.db.cursor.execute('DELETE FROM trips WHERE id = ?', (trip_id,))
+                self.db.commit()
+                print("Trip deleted!")
+            else:
+                print(" Cancelled")
+                
+        except ValueError:
+            print("Invalid input")
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def manage_places(self):
+        print("\n MANAGE PLACES")
+        print("-"*40)
+        
+        try:
+            trip_id = int(input("Enter trip ID: "))
+            
+            self.db.cursor.execute('SELECT name FROM trips WHERE id = ?', (trip_id,))
+            row = self.db.cursor.fetchone()
+            
+            if not row:
+                print("Trip not found")
+                return
+            
+            print(f"\n'{row['name']}' (ID: {trip_id})")
+            print("a) Add place")
+            print("l) List places")
+            print("b) Back")
+            action = input("Choose (a/l/b): ").strip().lower()
+            
+            if action == 'a':
+                self.add_place(trip_id)
+            elif action == 'l':
+                self.list_places(trip_id)
+            elif action == 'b':
+                return
+            else:
+                print("Invalid option")
+                
+        except ValueError:
+            print("Invalid input")
+        except Exception as e:
+            print(f"Error: {e}")
+
 
 
 def main():
