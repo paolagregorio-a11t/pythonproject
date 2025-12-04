@@ -11,7 +11,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 from database import DatabaseManager
 from config import Config
 from models import Trip
-
+import csv
+from datetime import datetime
 
 class TravelApp:
     
@@ -42,7 +43,9 @@ class TravelApp:
         print("4. Update trip budget")
         print("5. Delete trip")
         print("6. Manage places in trip")
-        print("7. Exit")
+        print("7. Export trips to CSV")
+        print("8. Exit")
+
         print("="*60)
     
     def add_trip(self):
@@ -152,6 +155,8 @@ class TravelApp:
             elif choice == '6':
                 self.manage_places()
             elif choice == '7':
+                self.export_trips_csv()
+            elif choice == '8':
                 print("\nGoodbye!")
                 break
             else:
@@ -251,6 +256,48 @@ class TravelApp:
             print("Invalid input")
         except Exception as e:
             print(f"Error: {e}")
+            
+    def export_trips_csv(self):
+        """Export all trips to a CSV file"""
+        print("\n EXPORT TRIPS TO CSV")
+        print("-"*40)
+        
+        try:
+            self.db.cursor.execute('SELECT * FROM trips')
+            rows = self.db.cursor.fetchall()
+            
+            if not rows:
+                print("No trips to export\n")
+                return
+            
+            # Asegurar carpeta reports
+            os.makedirs("reports", exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"reports/trips_{timestamp}.csv"
+            
+            with open(filename, mode="w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f, delimiter=";")
+                # Cabecera
+                writer.writerow([
+                    "id", "name", "country", "city",
+                    "start_date", "end_date", "budget", "description"
+                ])
+                # Filas
+                for row in rows:
+                    writer.writerow([
+                        row["id"],
+                        row["name"],
+                        row["country"],
+                        row["city"],
+                        row["start_date"],
+                        row["end_date"],
+                        row["budget"],
+                        row["description"] if row["description"] else ""
+                    ])
+            
+            print(f"Trips exported to: {filename}\n")
+        except Exception as e:
+            print(f"Error exporting CSV: {e}\n")
     
     def manage_places(self):
         print("\n MANAGE PLACES")
