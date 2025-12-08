@@ -51,8 +51,8 @@ class DatabaseManager:
                     end_date TEXT NOT NULL,
                     budget REAL NOT NULL,
                     description TEXT,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    created_at TEXT DEFAULT (datetime('now', 'localtime')),
+                    updated_at TEXT DEFAULT (datetime('now', 'localtime'))
                 )
             ''')
             
@@ -67,7 +67,7 @@ class DatabaseManager:
                     notes TEXT,
                     rating INTEGER DEFAULT 0,
                     visited INTEGER DEFAULT 0,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    created_at TEXT DEFAULT (datetime('now', 'localtime')),
                     FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE
                 )
             ''')

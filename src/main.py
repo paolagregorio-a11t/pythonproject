@@ -300,7 +300,7 @@ class TravelApp:
             print(f"Error exporting CSV: {e}\n")
     
     def manage_places(self):
-        print("\n MANAGE PLACES")
+        print("\nMANAGE PLACES")
         print("-"*40)
         
         try:
@@ -316,13 +316,16 @@ class TravelApp:
             print(f"\n'{row['name']}' (ID: {trip_id})")
             print("a) Add place")
             print("l) List places")
+            print("v) Mark place as visited")
             print("b) Back")
-            action = input("Choose (a/l/b): ").strip().lower()
+            action = input("Choose (a/l/v/b): ").strip().lower()
             
             if action == 'a':
                 self.add_place(trip_id)
             elif action == 'l':
                 self.list_places(trip_id)
+            elif action == 'v':
+                self.mark_place_visited(trip_id)
             elif action == 'b':
                 return
             else:
@@ -332,6 +335,28 @@ class TravelApp:
             print("Invalid input")
         except Exception as e:
             print(f"Error: {e}")
+    
+    def mark_place_visited(self, trip_id):
+        print("\nMARK PLACE AS VISITED")
+        print("-"*40)
+        
+        self.list_places(trip_id)
+        
+        try:
+            place_id = int(input("Enter place ID: "))
+            
+            self.db.cursor.execute('UPDATE places SET visited = 1 WHERE id = ?', (place_id,))
+            if self.db.cursor.rowcount > 0:
+                self.db.commit()
+                print("Place marked as visited!")
+            else:
+                print("Place not found")
+                
+        except ValueError:
+            print("Invalid ID")
+        except Exception as e:
+            print(f"Error: {e}")
+
 
 
 
